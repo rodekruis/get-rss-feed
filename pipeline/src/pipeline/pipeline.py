@@ -1,4 +1,3 @@
-import datetime
 import os.path
 import feedparser
 from googleapiclient.discovery import build
@@ -31,6 +30,7 @@ logging.getLogger("requests_oauthlib").setLevel(logging.WARNING)
 
 def main():
 
+    import datetime
     utc_timestamp = (
         datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
     )
@@ -64,7 +64,7 @@ def main():
         entries = []
 
         for source_name, source_url in sources.items():
-            logging.info('Start source', source_name)
+            logging.info(f'Start source {source_name}')
             # get news feed
             NewsFeed = feedparser.parse(source_url)
 
@@ -82,8 +82,8 @@ def main():
                 if not any(keyword.lower() in title_en.lower() or keyword.lower() in summary_en.lower() for keyword in
                            keywords):
                     logging.info('This entry is not about the earthquake:')
-                    logging.info(title_en)
-                    logging.info(summary_en)
+                    logging.info(f"{title_en}")
+                    logging.info(f"{summary_en}")
                     logging.info('---------------------------------------')
                     continue
 
