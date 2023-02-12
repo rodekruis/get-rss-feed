@@ -7,7 +7,11 @@ google-cloud-core==1.6.0
 google-cloud-language==2.0.0
 google-cloud-translate==3.1.0
 googleapis-common-protos==1.53.0
+# newspaper3k==0.2.8
 pandas==1.2.4
+python-dotenv==0.21.1
+sentencepiece==0.1.97
+# spacyturk==0.1.0
 tqdm==4.64.1
 torch==1.13.0
 transformers==4.13.0
