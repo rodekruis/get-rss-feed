@@ -96,33 +96,33 @@ for entry in tqdm(entries_sorted):
         valueInputOption="USER_ENTERED", insertDataOption="INSERT_ROWS", body=body).execute()
     sleep(1)
 
-        # # parse article and add full text to separate sheet
-        # article = Article(entry['link'])
-        # try:
-        #     article.download()
-        #     article.parse()
-        # except ArticleException:
-        #     continue
-        # # translate text
-        # sents, sents_en = []
-        # for sent in nlp(article.text).sents:
-        #     sents.append(sent.text)
-        #     sents_en.append(tr_en_translator(sent.text)[0]['translation_text'])
-        # article_text = ' '.join(sents)
-        # article_en = ' '.join(sents_en)
-        #
-        # entry_details = {
-        #     'Date': datetime.strftime("%d/%m/%Y"),
-        #     'Time': datetime.strftime("%H:%M"),
-        #     'Author': ', '.join(article.authors),
-        #     'Title (tr)': article.title,
-        #     'Title (en)': tr_en_translator(article.title)[0]['translation_text'],
-        #     'Text (tr)': article_text,
-        #     'Text (en)': article_en,
-        #     'Link': entry['link']
-        # }
-        # # add new row to google sheet
-        # body = {'values': [list(entry_details.values())]}
-        # result = service.spreadsheets().values().append(
-        #     spreadsheetId=spreadsheet_id, range='Article details!A:H',
-        #     valueInputOption="USER_ENTERED", insertDataOption="INSERT_ROWS", body=body).execute()
+# # parse article and add full text to separate sheet
+# article = Article(entry['link'])
+# try:
+#     article.download()
+#     article.parse()
+# except ArticleException:
+#     continue
+# # translate text
+# sents, sents_en = []
+# for sent in nlp(article.text).sents:
+#     sents.append(sent.text)
+#     sents_en.append(tr_en_translator(sent.text)[0]['translation_text'])
+# article_text = ' '.join(sents)
+# article_en = ' '.join(sents_en)
+#
+# entry_details = {
+#     'Date': datetime.strftime("%d/%m/%Y"),
+#     'Time': datetime.strftime("%H:%M"),
+#     'Author': ', '.join(article.authors),
+#     'Title (tr)': article.title,
+#     'Title (en)': tr_en_translator(article.title)[0]['translation_text'],
+#     'Text (tr)': article_text,
+#     'Text (en)': article_en,
+#     'Link': entry['link']
+# }
+# # add new row to google sheet
+# body = {'values': [list(entry_details.values())]}
+# result = service.spreadsheets().values().append(
+#     spreadsheetId=spreadsheet_id, range='Article details!A:H',
+#     valueInputOption="USER_ENTERED", insertDataOption="INSERT_ROWS", body=body).execute()
