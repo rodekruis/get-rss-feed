@@ -1,5 +1,6 @@
 import os.path
 import feedparser
+from google.cloud import translate_v2 as google_translate
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
 from transformers import pipeline
@@ -36,11 +37,11 @@ def main():
     )
 
     try:
-        # initialize the translator
-        tr_en_translator = pipeline("translation_tr_to_en", model=f"Helsinki-NLP/opus-mt-tr-en")
-
         # initialize google sheets api
-        SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
+        SCOPES = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/cloud-translation'
+        ]
         spreadsheet_id = '1QmjjbzDc_T91aMsZY7BQWod_fBJgYNhPYGsuHp5Zkz8'
         service_account_info = json.load(open(f"{credentials_path}/google-service-account-template.json"))
         service_account_info['private_key_id'] = os.environ['PRIVATE_KEY_ID']
@@ -48,6 +49,10 @@ def main():
         service_account_info['client_id'] = os.environ['CLIENT_ID']
         creds = service_account.Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
         service = build('sheets', 'v4', credentials=creds)
+
+        # initialize the translator
+        tr_en_translator = google_translate.Client(credentials=creds)
+        # tr_en_translator = pipeline("translation_tr_to_en", model=f"Helsinki-NLP/opus-mt-tr-en")
 
         # get data already in the spreadsheet
         result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id,
@@ -72,11 +77,11 @@ def main():
             for entry in NewsFeed.entries:
 
                 title = re.sub(r"<(.*)>", "", entry['title'])  # clean title (without HTML leftovers)
-                title_en = tr_en_translator(title)[0]['translation_text']  # translate title to english
+                title_en = tr_en_translator.translate(title, target_language="en")["translatedText"]  # translate title to english
 
                 if 'summary' in entry.keys():
                     summary = re.sub(r"<(.*)>", "", entry['summary'])  # clean summary (without HTML leftovers)
-                    summary_en = tr_en_translator(summary)[0]['translation_text']  # translate summary
+                    summary_en = tr_en_translator.translate(summary, target_language="en")["translatedText"]  # translate summary
                 else:
                     summary_en = title_en
 
