@@ -48,6 +48,8 @@ def main():
         service_account_info['client_id'] = os.environ['CLIENT_ID']
         creds = service_account.Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
         service = build('sheets', 'v4', credentials=creds)
+
+        # get data already in the spreadsheet
         result = service.spreadsheets().values().get(spreadsheetId=spreadsheet_id,
                                                      range='Turkiye Timeline of events!A:F').execute()
         values = result.get('values', [])
@@ -56,11 +58,10 @@ def main():
         # data sources
         sources = {
             'BBC Turkce': "https://feeds.bbci.co.uk/turkce/rss.xml",
-            'evrensel': 'https://www.evrensel.net/rss/haber.xml'
+            'Evrensel': 'https://www.evrensel.net/rss/haber.xml'
         }
         keywords = ['earthquake', 'victim', 'destruction', 'destroyed', 'damage', 'emergency', 'body', 'bodies', 'tent',
-                    'collapse',
-                    'rubble', 'survive', 'survivors']
+                    'collapse', 'rubble', 'survive', 'survivors']
         entries = []
 
         for source_name, source_url in sources.items():
@@ -70,11 +71,12 @@ def main():
 
             for entry in NewsFeed.entries:
 
-                title = re.sub(r"<(.*)>", "", entry['title'])
-                title_en = tr_en_translator(title)[0]['translation_text']
+                title = re.sub(r"<(.*)>", "", entry['title'])  # clean title (without HTML leftovers)
+                title_en = tr_en_translator(title)[0]['translation_text']  # translate title to english
+
                 if 'summary' in entry.keys():
-                    summary = re.sub(r"<(.*)>", "", entry['summary'])
-                    summary_en = tr_en_translator(summary)[0]['translation_text']
+                    summary = re.sub(r"<(.*)>", "", entry['summary'])  # clean summary (without HTML leftovers)
+                    summary_en = tr_en_translator(summary)[0]['translation_text']  # translate summary
                 else:
                     summary_en = title_en
 
@@ -87,10 +89,11 @@ def main():
                     logging.info('---------------------------------------')
                     continue
 
-                # skip if link already present
+                # skip if link already present in google sheet
                 if entry['link'] in df_old_values['Link'].unique():
                     continue
 
+                # create simple entry
                 datetime = pd.to_datetime(entry['published'])
                 entry_simple = {
                     'Date': datetime.strftime("%d/%m/%Y"),
@@ -103,7 +106,9 @@ def main():
                 }
                 entries.append(entry_simple)
 
-        entries_sorted = sorted(entries, key=lambda d: d['datetime'])
+        entries_sorted = sorted(entries, key=lambda d: d['datetime'])  # sort entries by date (from oldest to newest)
+
+        # add entries to google sheet
         logging.info('updating Google sheet')
         for entry in tqdm(entries_sorted):
             # add new row to google sheet
@@ -112,6 +117,7 @@ def main():
                 spreadsheetId=spreadsheet_id, range='Turkiye Timeline of events!A:F',
                 valueInputOption="USER_ENTERED", insertDataOption="INSERT_ROWS", body=body).execute()
             sleep(1)
+
     except Exception as e:
         logging.error(f"{e}")
         traceback.print_exception(*sys.exc_info())
