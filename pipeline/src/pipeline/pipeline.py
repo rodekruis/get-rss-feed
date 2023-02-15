@@ -16,6 +16,9 @@ if os.path.exists(f"{credentials_path}/.env"):
 import traceback
 import sys
 import logging
+from bs4 import BeautifulSoup
+import requests
+
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 handler = logging.StreamHandler(sys.stdout)
@@ -66,7 +69,7 @@ def main():
             'Evrensel': 'https://www.evrensel.net/rss/haber.xml'
         }
         keywords = ['earthquake', 'victim', 'destruction', 'destroyed', 'damage', 'emergency', 'body', 'bodies', 'tent',
-                    'collapse', 'rubble', 'survive', 'survivors']
+                    'collapse', 'rubble', 'survive', 'survivors','turkish border']
         entries = []
 
         for source_name, source_url in sources.items():
@@ -79,18 +82,23 @@ def main():
                 title = re.sub(r"<(.*)>", "", entry['title'])  # clean title (without HTML leftovers)
                 title_en = tr_en_translator.translate(title, target_language="en")["translatedText"]  # translate title to english
 
-                if 'summary' in entry.keys():
+                res = requests.get(entry['id'])
+                if res.status_code == 200:
+                    soup = BeautifulSoup(res.content, 'html.parser')
+                    text = [tr_en_translator.translate(p.get_text(), target_language="en")["translatedText"] for p in soup.find_all('p')] # translate content
+                    content_en = ' '.join(text.copy())
+                elif 'summary' in entry.keys():
                     summary = re.sub(r"<(.*)>", "", entry['summary'])  # clean summary (without HTML leftovers)
-                    summary_en = tr_en_translator.translate(summary, target_language="en")["translatedText"]  # translate summary
+                    content_en = tr_en_translator.translate(summary, target_language="en")["translatedText"]  # translate summary
                 else:
-                    summary_en = title_en
+                    content_en = title_en
 
                 # filter by keyword
-                if not any(keyword.lower() in title_en.lower() or keyword.lower() in summary_en.lower() for keyword in
+                if not any(keyword.lower() in title_en.lower() or keyword.lower() in content_en.lower() for keyword in
                            keywords):
                     logging.info('This entry is not about the earthquake:')
                     logging.info(f"{title_en}")
-                    logging.info(f"{summary_en}")
+                    logging.info(f"{content_en}")
                     logging.info('---------------------------------------')
                     continue
 
@@ -103,7 +111,7 @@ def main():
                 entry_simple = {
                     'Date': datetime.strftime("%d/%m/%Y"),
                     'Time': datetime.strftime("%H:%M"),
-                    'information': summary_en,
+                    'information': content_en,
                     'Source': source_name,
                     'Source+datetime': f'{source_name}, {datetime.strftime("%d/%m/%Y")} {datetime.strftime("%H:%M")}',
                     'Link': entry['link'],
