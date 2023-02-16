@@ -65,7 +65,6 @@ def main():
 
         # data sources
         sources = {
-            'BBC Turkce': "https://feeds.bbci.co.uk/turkce/rss.xml",
             'Evrensel': 'https://www.evrensel.net/rss/haber.xml'
         }
         keywords = ['earthquake', 'victim', 'destruction', 'destroyed', 'damage', 'emergency', 'body', 'bodies', 'tent',
@@ -78,6 +77,10 @@ def main():
             NewsFeed = feedparser.parse(source_url)
 
             for entry in NewsFeed.entries:
+
+                # skip if link already present in google sheet
+                if entry['link'] in df_old_values['Link'].unique():
+                    continue
 
                 title = re.sub(r"<(.*)>", "", entry['title'])  # clean title (without HTML leftovers)
                 title_en = tr_en_translator.translate(title, target_language="en")["translatedText"]  # translate title to english
@@ -100,10 +103,6 @@ def main():
                     logging.info(f"{title_en}")
                     logging.info(f"{content_en}")
                     logging.info('---------------------------------------')
-                    continue
-
-                # skip if link already present in google sheet
-                if entry['link'] in df_old_values['Link'].unique():
                     continue
 
                 # create simple entry
