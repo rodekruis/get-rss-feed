@@ -126,7 +126,7 @@ def main():
                     'Source': source_name,
                     'Source+datetime': f'{source_name}, {datetime_entry.strftime("%d/%m/%Y")} {datetime_entry.strftime("%H:%M")}',
                     'Link': entry['link'],
-                    'datetime': datetime
+                    'datetime': datetime_entry
                 }
                 entries.append(entry_simple)
                 count_saved += 1
