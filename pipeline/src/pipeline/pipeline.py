@@ -89,7 +89,7 @@ def main():
                     count_skipped += 1
                     continue
                 # skip if older than latest news
-                if datetime_entry.tz_localize(None) < df_old_values['datetime'].max().tz_localize(None):
+                if datetime_entry < df_old_values['datetime'].max().tz_localize('UTC+03:00'):
                     count_skipped += 1
                     continue
 
