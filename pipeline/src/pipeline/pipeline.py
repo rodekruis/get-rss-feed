@@ -38,6 +38,7 @@ def main():
     utc_timestamp = (
         datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).isoformat()
     )
+    count_skipped, count_translated, count_saved = 0, 0, 0
 
     try:
         # initialize google sheets api
@@ -62,6 +63,10 @@ def main():
                                                      range='Turkiye Timeline of events!A:F').execute()
         values = result.get('values', [])
         df_old_values = pd.DataFrame.from_records(values[1:], columns=values[0])
+        df_old_values['datetime'] = pd.to_datetime(
+            df_old_values['Date'].astype(str) + ' ' + df_old_values['Time'].astype(str),
+            format="%d/%m/%Y %H:%M"
+        )
 
         # data sources
         sources = {
@@ -77,9 +82,15 @@ def main():
             NewsFeed = feedparser.parse(source_url)
 
             for entry in NewsFeed.entries:
+                datetime_entry = pd.to_datetime(entry['published'])
 
                 # skip if link already present in google sheet
                 if entry['link'] in df_old_values['Link'].unique():
+                    count_skipped += 1
+                    continue
+                # skip if older than latest news
+                if datetime_entry.tz_localize(None) < df_old_values['datetime'].max().tz_localize(None):
+                    count_skipped += 1
                     continue
 
                 title = re.sub(r"<(.*)>", "", entry['title'])  # clean title (without HTML leftovers)
@@ -95,6 +106,7 @@ def main():
                     content_en = tr_en_translator.translate(summary, target_language="en")["translatedText"]  # translate summary
                 else:
                     content_en = title_en
+                count_translated += 1
 
                 # filter by keyword
                 if not any(keyword.lower() in title_en.lower() or keyword.lower() in content_en.lower() for keyword in
@@ -103,20 +115,21 @@ def main():
                     logging.info(f"{title_en}")
                     logging.info(f"{content_en}")
                     logging.info('---------------------------------------')
+                    count_skipped += 1
                     continue
 
                 # create simple entry
-                datetime = pd.to_datetime(entry['published'])
                 entry_simple = {
-                    'Date': datetime.strftime("%d/%m/%Y"),
-                    'Time': datetime.strftime("%H:%M"),
+                    'Date': datetime_entry.strftime("%d/%m/%Y"),
+                    'Time': datetime_entry.strftime("%H:%M"),
                     'information': content_en,
                     'Source': source_name,
-                    'Source+datetime': f'{source_name}, {datetime.strftime("%d/%m/%Y")} {datetime.strftime("%H:%M")}',
+                    'Source+datetime': f'{source_name}, {datetime_entry.strftime("%d/%m/%Y")} {datetime_entry.strftime("%H:%M")}',
                     'Link': entry['link'],
                     'datetime': datetime
                 }
                 entries.append(entry_simple)
+                count_saved += 1
 
         entries_sorted = sorted(entries, key=lambda d: d['datetime'])  # sort entries by date (from oldest to newest)
 
@@ -134,7 +147,8 @@ def main():
         logging.error(f"{e}")
         traceback.print_exception(*sys.exc_info())
 
-    logging.info("Python timer trigger function ran at %s", utc_timestamp)
+    logging.info("Pipeline ran at %s", utc_timestamp)
+    logging.info(f"{count_skipped} articles skipped, {count_translated} translated, {count_saved} saved")
 
 
 if __name__ == "__main__":
