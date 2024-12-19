@@ -11,7 +11,7 @@ googleapis-common-protos==1.53.0
 # newspaper3k==0.2.8
 pandas==1.2.4
 python-dotenv==0.21.1
-requests==2.28.2
+requests==2.32.2
 sentencepiece==0.1.97
 # spacyturk==0.1.0
 tqdm==4.64.1
